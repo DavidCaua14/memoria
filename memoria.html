@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uma Memória</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background: linear-gradient(to bottom, #0d1b2a, #1b263b);
+  color:#fff;
+  position: relative;
+}
+
+/* Container de partículas */
+#particleContainer {
+  position:absolute;
+  width:100%;
+  height:100%;
+  top:0;
+  left:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:1;
+}
+
+/* Telas */
+.screen {
+  position:absolute;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  transition: opacity 1s ease;
+  z-index:2;
+}
+.hidden { opacity:0; pointer-events:none; }
+
+button {
+  background: rgba(30,144,255,0.8);
+  color:white;
+  border:none;
+  border-radius:50px;
+  padding:12px 20px;
+  font-size:1rem;
+  cursor:pointer;
+  margin:10px;
+  transition: background 0.3s;
+}
+button:hover { background: rgba(30,144,255,1); }
+
+.card-container {
+  max-width:600px;
+  text-align:center;
+  padding:2rem;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+  border-radius:20px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  opacity:0;
+  transition: opacity 1s ease;
+}
+
+.card-container.visible {
+  opacity:1;
+}
+
+.card-text {
+  font-size:1rem;
+  line-height:1.7;
+  color: #e0e0ff;
+}
+
+/* Partículas estilo estrelas azuis */
+.particle {
+  position:absolute;
+  width:2px;
+  height:2px;
+  background: #66ccff;
+  border-radius:50%;
+  opacity:0.7;
+  filter: blur(1px);
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  0% { transform: translateY(-10vh) scale(0.3); opacity:0; }
+  50% { opacity:0.7; }
+  100% { transform: translateY(110vh) scale(1); opacity:0; }
+}
+
+@media (max-width:600px){
+  .card-container { margin:1rem; padding:1.5rem; }
+  .card-text { font-size:0.95rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Container de partículas -->
+<div id="particleContainer"></div>
+
+<!-- Tela inicial -->
+<div id="startScreen" class="screen">
+  <h1>Tem certeza que quer continuar?</h1>
+  <div>
+    <button id="yesBtn">Sim</button>
+    <button id="noBtn">Não</button>
+  </div>
+</div>
+
+<!-- Tela Não -->
+<div id="noScreen" class="screen hidden">
+  <h1>Desculpa, esse link irá sumir nas próximas 48 horas.</h1>
+</div>
+
+<!-- Tela dos cards -->
+<div id="cardScreen" class="screen hidden">
+  <div class="card-container" id="cardContainer">
+    <p class="card-text" id="cardText"></p>
+    <button id="nextCardBtn">Próximo</button>
+  </div>
+</div>
+
+<audio id="backgroundMusic" src="./Tudo.mp3" loop></audio>
+
+<script>
+const startScreen = document.getElementById('startScreen');
+const noScreen = document.getElementById('noScreen');
+const cardScreen = document.getElementById('cardScreen');
+const yesBtn = document.getElementById('yesBtn');
+const noBtn = document.getElementById('noBtn');
+const nextCardBtn = document.getElementById('nextCardBtn');
+const cardText = document.getElementById('cardText');
+const cardContainer = document.getElementById('cardContainer');
+const music = document.getElementById('backgroundMusic');
+const particleContainer = document.getElementById('particleContainer');
+
+const cards = [
+  "Aquela manhã transformou minha vida de forma silenciosa, mas profunda.",
+  "Você entrou na sala, um brilho delicado irradiando de seu olhar, intenso e inesquecível.",
+  "Cada gesto seu parecia refletir luz sobre tudo ao meu redor, e eu percebia que cada momento era precioso.",
+  "Com o tempo, entendi que meu mundo havia sido tocado por sua presença de maneira irremediável.",
+  "Quando você se foi, fiquei com o eco da sua ausência, sentindo a falta que só crescia a cada dia.",
+  "Mesmo diante da mágoa, meu coração desejava sua felicidade, acima de tudo, mesmo sem minha companhia.",
+  "Todas as noites você vinha nos meus sonhos, e novamente eu via aquele brilho que me motivava a viver.",
+  "Acordar e perceber que era apenas um sonho era doloroso, mas a lembrança permanecia viva em mim.",
+  "Hoje, um pedaço seu habita minha essência, insistindo em permanecer, mesmo contra minha vontade.",
+  "No fim, tudo ainda se resume a você, e a presença invisível que permanece em meu coração."
+];
+
+let currentCard = 0;
+
+// Eventos de tela inicial
+yesBtn.addEventListener('click', () => {
+  startScreen.classList.add('hidden');
+  cardScreen.classList.remove('hidden');
+  music.volume = 0.03;
+  music.play().catch(()=>console.log("Clique para permitir música"));
+  showCard(currentCard);
+});
+
+noBtn.addEventListener('click', () => {
+  startScreen.classList.add('hidden');
+  noScreen.classList.remove('hidden');
+});
+
+// Próximo card
+nextCardBtn.addEventListener('click', () => {
+  fadeOutCard(() => {
+    currentCard++;
+    if(currentCard < cards.length){
+      showCard(currentCard);
+    } else {
+      cardText.textContent = "Fim...";
+      nextCardBtn.style.display = "none";
+      setTimeout(()=> music.pause(), 3000);
+    }
+  });
+});
+
+// Mostrar card com fade-in
+function showCard(index){
+  cardText.style.opacity = 0;
+  cardContainer.classList.remove('visible');
+  setTimeout(() => {
+    cardText.textContent = cards[index];
+    cardContainer.classList.add('visible');
+    cardText.style.opacity = 1;
+  }, 300);
+}
+
+// Fade-out
+function fadeOutCard(callback){
+  cardText.style.opacity = 0;
+  cardContainer.classList.remove('visible');
+  setTimeout(callback, 600);
+}
+
+// Criar partículas de estrelas azuis
+function createParticle() {
+  const particle = document.createElement('div');
+  particle.classList.add('particle');
+  particle.style.left = Math.random()*100 + 'vw';
+  particle.style.width = particle.style.height = (2 + Math.random()*3) + 'px';
+  particle.style.animationDuration = (15 + Math.random()*10) + 's';
+  particle.style.opacity = 0.3 + Math.random()*0.6;
+  particleContainer.appendChild(particle);
+  setTimeout(()=> particle.remove(), 25000);
+}
+setInterval(createParticle, 300);
+</script>
+
+</body>
+</html>
